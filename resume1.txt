@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Music Player</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial;
+        background: var(--bg);
+        color: var(--text);
+        transition: 0.3s;
+    }
+
+    :root {
+        --bg: #f0f0f0;
+        --text: #000;
+        --card: #9cdbff;
+        --sidebar: #8dd0f7;
+        --button: #1b75bb;
+        --button-text: white;
+    }
+
+    [data-theme="dark"] {
+        --bg: #1e1e1e;
+        --text: #fff;
+        --card: #2b4d63;
+        --sidebar: #193244;
+        --button: #4a8ac2;
+    }
+
+    h2 { margin-top: 0; }
+    .container {
+        display: flex;
+        padding: 20px;
+        gap: 30px;
+    }
+
+    /* Left Songs Panel */
+    .songs-panel {
+        width: 25%;
+        background: var(--sidebar);
+        padding: 20px;
+        border-radius: 10px;
+    }
+    .songs-panel button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 8px;
+        border: none;
+        background: var(--button);
+        color: var(--button-text);
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    /* Song Card */
+    .song-card {
+        width: 40%;
+        background: var(--card);
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+    }
+
+    .song-card img {
+        width: 100%;
+        border-radius: 10px;
+    }
+
+    .controls button {
+        padding: 10px 20px;
+        margin: 10px;
+        border: none;
+        cursor: pointer;
+        background: var(--button);
+        color: var(--button-text);
+        border-radius: 5px;
+    }
+
+    /* Playlist */
+    .playlist-panel {
+        width: 25%;
+        background: var(--sidebar);
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    .playlist-panel button {
+        background: #b671ff;
+        padding: 10px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .playlist-item {
+        background: var(--button);
+        padding: 8px;
+        color: white;
+        border-radius: 5px;
+        margin-top: 6px;
+        cursor: pointer;
+    }
+
+</style>
+</head>
+<body>
+
+<h1 style="text-align:center;">Music Player</h1>
+
+<!-- Theme Toggle -->
+<div style="position:absolute; top:20px; right:20px;">
+    <label>Dark</label>
+    <input type="checkbox" id="themeToggle">
+</div>
+
+<div class="container">
+
+    <!-- LEFT PANEL -->
+    <div class="songs-panel">
+        <label>Filter by Genre:</label>
+        <select id="genreFilter">
+            <option value="All">All</option>
+            <option value="Pop">Pop</option>
+            <option value="Rock">Rock</option>
+        </select>
+
+        <h2>All Songs</h2>
+        <input type="text" id="searchSong" placeholder="Search song..." style="width:100%; padding:8px;">
+        <div id="songsList"></div>
+    </div>
+
+    <!-- CENTER SONG CARD -->
+    <div class="song-card">
+        <img id="songImg" src="">
+        <h2 id="songName"></h2>
+        <p id="songArtist"></p>
+
+        <audio controls id="audioPlayer" style="width:100%;"></audio>
+
+        <div class="controls">
+            <button id="prevBtn">Prev</button>
+            <button id="addPlaylistBtn">Add to Playlist</button>
+            <button id="nextBtn">Next</button>
+        </div>
+    </div>
+
+    <!-- RIGHT PLAYLIST PANEL -->
+    <div class="playlist-panel">
+        <input type="text" id="playlistInput" placeholder="Enter playlist name">
+        <button id="createPlaylistBtn">Create Playlist</button>
+
+        <h3>Current Playlist</h3>
+        <div id="currentPlaylistSongs"></div>
+
+        <h3>All Playlists</h3>
+        <input type="text" id="searchPlaylist" placeholder="Search playlist..." style="width:100%; padding:8px;">
+        <div id="allPlaylists"></div>
+    </div>
+
+</div>
+
+<script>
+/* SONG DATABASE */
+const songs = [
+    {
+        id: 1,
+        name: "Shape Of You",
+        artist: "Ed Sheeran",
+        genre: "Pop",
+        img: "https://files.codingninjas.in/image2-28694.jpg",
+        src: "https://www.dropbox.com/s/q5tqjg1s2s9bhj7/shapeofyou.mp3?raw=1"
+    },
+    {
+        id: 2,
+        name: "All Of Me",
+        artist: "Adele",
+        genre: "Pop",
+        img: "https://files.codingninjas.in/image2-28694.jpg",
+        src: "#"
+    },
+    {
+        id: 3,
+        name: "Wonderwall",
+        artist: "Oasis",
+        genre: "Rock",
+        img: "https://files.codingninjas.in/image2-28694.jpg",
+        src: "#"
+    }
+];
+
+let currentIndex = 0;
+let playlists = JSON.parse(localStorage.getItem("playlists")) || {};
+let currentPlaylist = "";
+
+/************** THEME TOGGLE **************/
+document.getElementById("themeToggle").onchange = () => {
+    const t = document.body.getAttribute("data-theme");
+    document.body.setAttribute("data-theme", t === "dark" ? "light" : "dark");
+};
+
+/************** RENDER SONG LIST **************/
+function showSongs() {
+    const list = document.getElementById("songsList");
+    list.innerHTML = "";
+
+    const genre = document.getElementById("genreFilter").value;
+    const search = document.getElementById("searchSong").value.toLowerCase();
+
+    songs
+        .filter(s => (genre === "All" || s.genre === genre))
+        .filter(s => s.name.toLowerCase().includes(search))
+        .forEach((s, i) => {
+            const btn = document.createElement("button");
+            btn.textContent = `${s.name} - ${s.artist}`;
+            btn.onclick = () => playSong(i);
+            list.appendChild(btn);
+        });
+}
+document.getElementById("genreFilter").onchange = showSongs;
+document.getElementById("searchSong").oninput = showSongs;
+
+/************** PLAY SONG **************/
+function playSong(i) {
+    currentIndex = i;
+    const song = songs[i];
+
+    document.getElementById("songImg").src = song.img;
+    document.getElementById("songName").textContent = song.name;
+    document.getElementById("songArtist").textContent = song.artist;
+
+    const player = document.getElementById("audioPlayer");
+    player.src = song.src;
+    player.play();
+}
+
+document.getElementById("nextBtn").onclick = () => {
+    currentIndex = (currentIndex + 1) % songs.length;
+    playSong(currentIndex);
+};
+
+document.getElementById("prevBtn").onclick = () => {
+    currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+    playSong(currentIndex);
+};
+
+/************** PLAYLIST SYSTEM **************/
+function renderAllPlaylists() {
+    const div = document.getElementById("allPlaylists");
+    div.innerHTML = "";
+
+    const search = document.getElementById("searchPlaylist").value.toLowerCase();
+
+    Object.keys(playlists)
+        .filter(name => name.toLowerCase().includes(search))
+        .forEach(name => {
+            const item = document.createElement("div");
+            item.className = "playlist-item";
+            item.textContent = name;
+            item.onclick = () => loadPlaylist(name);
+            div.appendChild(item);
+        });
+}
+document.getElementById("searchPlaylist").oninput = renderAllPlaylists;
+
+function loadPlaylist(name) {
+    currentPlaylist = name;
+    renderPlaylistSongs();
+}
+
+function renderPlaylistSongs() {
+    const div = document.getElementById("currentPlaylistSongs");
+    div.innerHTML = "";
+
+    if (!playlists[currentPlaylist]) return;
+
+    playlists[currentPlaylist].forEach((id, i) => {
+        const s = songs.find(x => x.id === id);
+        const row = document.createElement("div");
+        row.textContent = `${s.name} - ${s.artist}`;
+
+        let removeBtn = document.createElement("button");
+        removeBtn.textContent = "X";
+        removeBtn.style.marginLeft = "10px";
+        removeBtn.onclick = () => {
+            playlists[currentPlaylist].splice(i, 1);
+            savePlaylists();
+            renderPlaylistSongs();
+        };
+
+        row.appendChild(removeBtn);
+        div.appendChild(row);
+    });
+}
+
+document.getElementById("createPlaylistBtn").onclick = () => {
+    const name = document.getElementById("playlistInput").value.trim();
+    if (!name) return alert("Enter playlist name");
+
+    playlists[name] = playlists[name] || [];
+    savePlaylists();
+    renderAllPlaylists();
+};
+
+document.getElementById("addPlaylistBtn").onclick = () => {
+    if (!currentPlaylist) return alert("Select a playlist first");
+    playlists[currentPlaylist].push(songs[currentIndex].id);
+    savePlaylists();
+    renderPlaylistSongs();
+};
+
+function savePlaylists() {
+    localStorage.setItem("playlists", JSON.stringify(playlists));
+}
+
+/************** INITIALIZE **************/
+showSongs();
+playSong(0);
+renderAllPlaylists();
+
+</script>
+
+</body>
+</html>
